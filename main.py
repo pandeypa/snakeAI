@@ -35,7 +35,7 @@ class SNAKE:
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
-LR = 0.00
+LR = 0.001
 
 
 class AGENT:
@@ -93,7 +93,7 @@ class AGENT:
         return(np.array(state, dtype = int))
 
     def get_move(self, state):
-        self.epsilon = 0 # 80 - self.n_games # 0
+        self.epsilon = 80 - self.n_games # 0
         move = [0, 0, 0]
         if random.randint(0, 200) < self.epsilon:
             idx = random.randint(0, 2)
