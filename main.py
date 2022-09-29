@@ -14,7 +14,7 @@ class FRUIT:
     def __init__(self, x=random.randint(0, cell_number - 1), y=random.randint(0, cell_number - 1)):
         self.pos = Vector2(x, y)
 
-    def create(self):
+    def create(self):  # set pixel to fruit
         fruit_rect = pygame.Rect(int(self.pos.x * cell_size), int(self.pos.y * cell_size), cell_size, cell_size)
         pygame.draw.rect(screen, pygame.Color('red'), fruit_rect)
 
@@ -24,12 +24,12 @@ class SNAKE:
         self.body = [Vector2(5, 10), Vector2(6, 10), Vector2(7, 10)]
         self.direction = Vector2(1, 0)
 
-    def create(self):
+    def create(self):  # set pixels for snake body
         for body in self.body:
             body_rect = pygame.Rect(int(body.x * cell_size), int(body.y * cell_size), cell_size, cell_size)
             pygame.draw.rect(screen, pygame.Color('green'), body_rect)
 
-    def move(self):
+    def move(self):  # update the snake's position
         self.body.append(self.body[-1] + self.direction)
         self.body.pop(0)
 
@@ -94,24 +94,24 @@ class AGENT:
         return(np.array(state, dtype = int))
 
     def get_move(self, state):
-        self.epsilon = 80 - self.n_games # 0 #
+        self.epsilon = 80 - self.n_games  # 0 # exploration vs exploitation
         move = [0, 0, 0]
-        if random.randint(0, 200) < self.epsilon:
+        if random.randint(0, 200) < self.epsilon:  # random move (exploration)
             idx = random.randint(0, 2)
             move[idx] = 1
         else:
-            prediction = self.model(torch.tensor(state, dtype=torch.float))
+            prediction = self.model(torch.tensor(state, dtype=torch.float))  # get move from model (exploitation)
             idx = torch.argmax(prediction).item()
             move[idx] = 1
         return(move)
 
-    def train_short_memory(self, old_state, move, reward, new_state, done):
+    def train_short_memory(self, old_state, move, reward, new_state, done):  # train on action during game
         self.trainer.train_step(old_state, move, reward, new_state, done)
 
-    def remember(self, old_state, move, reward, new_state, done):
+    def remember(self, old_state, move, reward, new_state, done):  # append action to long memory
         self.memory.append((old_state, move, reward, new_state, done))
 
-    def train_long_memory(self):
+    def train_long_memory(self):  # take a random sample from memory and train
         if len(self.memory) > BATCH_SIZE:
             mini_sample = random.sample(self.memory, BATCH_SIZE)
         else:
@@ -142,17 +142,17 @@ def game_over():
     global record
     agent.n_games += 1
     over = True
-    if len(snake.body) - 3 > record:
+    if len(snake.body) - 3 > record:  # update model with best snake
         record = len(snake.body) - 3
         agent.model.save()
         print('Model updated,', 'Record: ' + str(record))
-    snake.body = [Vector2(5, 10), Vector2(6, 10), Vector2(7, 10)]
+    snake.body = [Vector2(5, 10), Vector2(6, 10), Vector2(7, 10)]  # reset snake, direction, and fruit
     snake.direction = Vector2(1, 0)
     fruit.pos = Vector2(random.randint(0, cell_number - 1), random.randint(0, cell_number - 1))
 
 
 def show_score():
-    score_val = len(snake.body) - 3
+    score_val = len(snake.body) - 3  # update game score
     score = game_font.render(str(score_val), True, pygame.Color('white'))
     screen.blit(score, (10, 10))
 
@@ -244,4 +244,3 @@ while True:
     frame += 1
     # time.sleep(0.1)  # time delay for human game
     clock.tick(SPEED)  # adjust speed, higher faster
-
