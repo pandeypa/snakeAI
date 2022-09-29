@@ -1,3 +1,4 @@
+import time
 from collections import deque
 import numpy as np
 import pygame, sys, random
@@ -93,7 +94,7 @@ class AGENT:
         return(np.array(state, dtype = int))
 
     def get_move(self, state):
-        self.epsilon = 80 - self.n_games # 0
+        self.epsilon = 80 - self.n_games # 0 #
         move = [0, 0, 0]
         if random.randint(0, 200) < self.epsilon:
             idx = random.randint(0, 2)
@@ -127,6 +128,7 @@ fruit = FRUIT()
 snake = SNAKE()
 agent = AGENT()
 
+SPEED = 40  # adjust game speed, higher == faster
 reward = 0
 frame = 0
 move = [0, 0, 0]
@@ -143,6 +145,7 @@ def game_over():
     if len(snake.body) - 3 > record:
         record = len(snake.body) - 3
         agent.model.save()
+        print('Model updated,', 'Record: ' + str(record))
     snake.body = [Vector2(5, 10), Vector2(6, 10), Vector2(7, 10)]
     snake.direction = Vector2(1, 0)
     fruit.pos = Vector2(random.randint(0, cell_number - 1), random.randint(0, cell_number - 1))
@@ -156,10 +159,12 @@ def show_score():
 
 while True:
     reward = 0
-    old_state = agent.get_state()
-    move = agent.get_move(old_state)
 
-    if move == [1, 0, 0]:
+    old_state = agent.get_state()  # 1. get current state of game
+
+    move = agent.get_move(old_state)  # 2. get move based on forward pass of NN on state or random move on epsilon
+
+    if move == [1, 0, 0]:                             # comment out for human game
         pass
     elif move == [0, 1, 0]:
         if snake.direction == Vector2(0, -1):
@@ -184,18 +189,20 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP and snake.direction != Vector2(0, 1):
-                snake.direction = Vector2(0, -1)
-            elif event.key == pygame.K_DOWN and snake.direction != Vector2(0, -1):
-                snake.direction = Vector2(0, 1)
-            elif event.key == pygame.K_RIGHT and snake.direction != Vector2(-1, 0):
-                snake.direction = Vector2(1, 0)
-            elif event.key == pygame.K_LEFT and snake.direction != Vector2(1, 0):
-                snake.direction = Vector2(-1, 0)
+
+        # if event.type == pygame.KEYDOWN:                                              # for human game
+        #     if event.key == pygame.K_UP and snake.direction != Vector2(0, 1):
+        #         snake.direction = Vector2(0, -1)
+        #     elif event.key == pygame.K_DOWN and snake.direction != Vector2(0, -1):
+        #         snake.direction = Vector2(0, 1)
+        #     elif event.key == pygame.K_RIGHT and snake.direction != Vector2(-1, 0):
+        #         snake.direction = Vector2(1, 0)
+        #     elif event.key == pygame.K_LEFT and snake.direction != Vector2(1, 0):
+        #         snake.direction = Vector2(-1, 0)
+
     screen.fill(pygame.Color('black'))
 
-    snake.move()
+    snake.move()  # 3. move the snake
 
     if snake.body[-1] == fruit.pos:  # snake eat
         fruit.pos = Vector2(random.randint(0, cell_number - 1), random.randint(0, cell_number - 1))
@@ -216,14 +223,18 @@ while True:
         frame = 0
         game_over()
 
-    if frame > 300*(len(snake.body) - 2):  # too long
+    if frame > 200:  # snake took too long
         reward -= 10
         frame = 0
         game_over()
 
-    new_state = agent.get_state()
-    agent.train_short_memory(old_state, move, reward, new_state, over)
-    agent.remember(old_state, move, reward, new_state, over)
+    reward -= 0.1  # punish idling
+
+    new_state = agent.get_state()  # 4. get new state after move, including reward or game over if occurs
+
+    agent.train_short_memory(old_state, move, reward, new_state, over)  # 5. train data on NN
+
+    agent.remember(old_state, move, reward, new_state, over)  # 6. save sample to train in long memory each game over
 
     fruit.create()
     snake.create()
@@ -231,4 +242,6 @@ while True:
 
     pygame.display.update()
     frame += 1
-    clock.tick(60)
+    # time.sleep(0.1)  # time delay for human game
+    clock.tick(SPEED)  # adjust speed, higher faster
+
