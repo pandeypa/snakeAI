@@ -45,7 +45,7 @@ class QTrainer:
         move = torch.tensor(move, dtype=torch.long)
         reward = torch.tensor(reward, dtype=torch.float)
 
-        if len(old_state.shape) == 1:  # Fix dimensions of tensor for first batch (still (1, x))
+        if len(old_state.shape) == 1:  # Fix dimensions of tensor for first batch ((x) -> (1, x))
             old_state = torch.unsqueeze(old_state, 0)
             new_state = torch.unsqueeze(new_state, 0)
             move = torch.unsqueeze(move, 0)
