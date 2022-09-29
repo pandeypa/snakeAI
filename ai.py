@@ -10,7 +10,7 @@ class Linear_QNet(nn.Module):
         super().__init__()
         self.linear1 = nn.Linear(input_size, hidden_size)
         self.linear2 = nn.Linear(hidden_size, output_size)
-        if os.path.exists('./model/model.pth'):
+        if os.path.exists('./model/model.pth'):  # load model if available
             self.load_state_dict(torch.load('./model/model.pth'))
             print('Model loaded')
 
@@ -45,7 +45,7 @@ class QTrainer:
         move = torch.tensor(move, dtype=torch.long)
         reward = torch.tensor(reward, dtype=torch.float)
 
-        if len(old_state.shape) == 1:
+        if len(old_state.shape) == 1:  # Fix dimensions of tensor for first batch (still (1, x))
             old_state = torch.unsqueeze(old_state, 0)
             new_state = torch.unsqueeze(new_state, 0)
             move = torch.unsqueeze(move, 0)
@@ -58,17 +58,20 @@ class QTrainer:
         reward = reward.to(device)
         self.model.to(device)
 
-        pred = self.model(old_state)  # 2. forward pass on NN
+        pred = self.model(old_state)  # 2. forward pass on NN, get Q value
 
-        target = pred.clone()
+        target = pred.clone()  # 3. calculate loss function, get new Q value
         for idx in range(len(done)):
             Q_new = reward[idx]
             if not done[idx]:
-                Q_new = reward[idx] + self.gamma * torch.max(self.model(new_state[idx]))
+                Q_new = reward[idx] + self.gamma * torch.max(self.model(new_state[idx]))  # Bellman's equation
 
             target[idx][torch.argmax(move[idx]).item()] = Q_new
 
-        self.optimizer.zero_grad()
-        loss = self.criteria(target, pred)
-        loss.backward()
-        self.optimizer.step()
+        self.optimizer.zero_grad()  # empty gradients from previous train
+        
+        loss = self.criteria(target, pred)  # 4. calculate actual loss value (Q_new - Q)^2
+        
+        loss.backward()  # 5. apply backpropagation, calculate gradient
+        
+        self.optimizer.step()  # 6. update wights of NN using calculated gradient
