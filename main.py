@@ -146,9 +146,12 @@ def game_over():
         record = len(snake.body) - 3
         agent.model.save()
         print('Model updated,', 'Record: ' + str(record))
+
     snake.body = [Vector2(5, 10), Vector2(6, 10), Vector2(7, 10)]  # reset snake, direction, and fruit
     snake.direction = Vector2(1, 0)
     fruit.pos = Vector2(random.randint(0, cell_number - 1), random.randint(0, cell_number - 1))
+
+    agent.train_long_memory()  # train snake on long memory
 
 
 def show_score():
