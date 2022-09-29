@@ -1,9 +1,9 @@
-import numpy
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import os
+
 
 class Linear_QNet(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
@@ -19,7 +19,8 @@ class Linear_QNet(nn.Module):
         x = self.linear2(x)
         return(x)
 
-    def save(self, file_name='model.pth'):
+    def save(self):
+        file_name = 'model.pth'
         model_folder_path = './model'
         if not os.path.exists(model_folder_path):
             os.makedirs(model_folder_path)
@@ -37,13 +38,11 @@ class QTrainer:
         self.criteria = nn.MSELoss()
 
     def train_step(self, old_state, move, reward, new_state, done):
-        old_state = numpy.array(old_state)
-        old_state = torch.tensor(old_state, dtype=torch.float)
-        new_state = numpy.array(new_state)
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # train in gpu if available
+
+        old_state = torch.tensor(old_state, dtype=torch.float)  # 1. convert data to tensor for input to NN
         new_state = torch.tensor(new_state, dtype=torch.float)
-        move = numpy.array(move)
         move = torch.tensor(move, dtype=torch.long)
-        reward = numpy.array(reward)
         reward = torch.tensor(reward, dtype=torch.float)
 
         if len(old_state.shape) == 1:
@@ -53,7 +52,13 @@ class QTrainer:
             reward = torch.unsqueeze(reward, 0)
             done = (done, )
 
-        pred = self.model(old_state)
+        old_state = old_state.to(device)  # move data to train in gpu
+        new_state = new_state.to(device)
+        move = move.to(device)
+        reward = reward.to(device)
+        self.model.to(device)
+
+        pred = self.model(old_state)  # 2. forward pass on NN
 
         target = pred.clone()
         for idx in range(len(done)):
