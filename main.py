@@ -145,7 +145,7 @@ def game_over():
     if len(snake.body) - 3 > record:  # update model with best snake
         record = len(snake.body) - 3
         agent.model.save()
-        print('Model updated,', 'Record: ' + str(record))
+        print('Model updated,', 'Record: ' + str(record) + ', No. of games: ' + str(agent.n_games))
 
     snake.body = [Vector2(5, 10), Vector2(6, 10), Vector2(7, 10)]  # reset snake, direction, and fruit
     snake.direction = Vector2(1, 0)
